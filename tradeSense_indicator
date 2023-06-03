@@ -1,0 +1,47 @@
+
+//@version=5
+
+// VWAP indicator 
+indicator(title="tradeSense", overlay=true)
+averageData = input.source(close, title="Average Data Source")
+vwapData  = ta.vwap(averageData)
+plot(vwapData, color=color.blue, title="VWAP")
+
+// Moving average 12
+len_8 = input.int(12, minval=1, title="Length")
+src_8 = input(close, title="Source")
+offset_8 = input.int(title="Offset", defval=0, minval=-500, maxval=500)
+out_8 = ta.ema(src_8, len_8)
+plot(out_8, title="EMA", color=color.yellow, offset=offset_8,linewidth=2)
+
+// Smoothed Moving Average 26
+len_14 = input.int(26, minval=1, title="Length")
+src_14 = input(close, title="Source")
+offset_14 = input.int(title="Offset", defval=0, minval=-500, maxval=500)
+out_14 = ta.sma(src_14, len_14)
+plot(out_14, title="SMA", color=color.lime, offset=offset_14,linewidth=2)
+
+// Check crossover
+ema_crossover_above_14 = ta.crossover(out_8,out_14)
+ema_crossover_below_14 = ta.crossover(out_14,out_8)
+
+var buy_open = false
+var sell_open = false
+
+// When to buy 
+if(vwapData < close and out_8 > out_14 and (not buy_open))
+	buy_open := true
+	label.new(bar_index, high, "Buy", xloc.bar_index, yloc.price, color=color.green, textcolor=color.white, size=size.normal, style=label.style_label_down)    
+
+// When to close Buy trade
+if(ema_crossover_below_14)
+	buy_open := false
+
+// When to Sell
+if(vwapData > close and out_8 < out_14 and (not sell_open))
+	sell_open := true
+    label.new(bar_index, low, "Sell", xloc.bar_index, yloc.price, color=color.red, textcolor=color.white, size=size.normal, style=label.style_label_up)
+
+// When to close Sell Trade
+if(ema_crossover_above_14)
+	sell_open := false

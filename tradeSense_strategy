@@ -1,0 +1,53 @@
+//@version=5
+
+strategy('tradeSense')
+
+// Backtesting time period
+i_from = input.time(defval = timestamp("01 May 2023 00:00 +0000"), title = "From")
+i_thru = input.time(defval = timestamp("27 May 2023 00:00 +0000"), title = "Thru")
+
+i_show = input     (defval = true, title = "Show Date Range")
+date() => time >= i_from and time <= i_thru   
+
+bgcolor(color = i_show and date() ? color.new(color.gray, 90) : na)  
+
+// Moving averages
+out_8 = ta.ema(close, 12)
+out_14 = ta.sma(close, 26)
+out_vwap = ta.vwap(close)
+
+// Check crossover
+ema_crossover_above_14 = ta.crossover(out_8,out_14)
+ema_crossover_below_14 = ta.crossover(out_14,out_8)
+
+var buy_open = false
+var sell_open = false
+
+
+var float buy_price_stoploss = 0
+var float sell_price_stoploss = 0
+var float buy_price_profit = 0
+var float sell_price_proft = 0
+
+
+// Buy 
+if(out_vwap < close and out_8 > out_14 and (not buy_open))
+	buy_open := true
+    buy_price_stoploss := close - ((close * 25)/10000)
+    strategy.entry("Long",strategy.long)
+    
+// Close Buy trade
+if(ema_crossover_below_14 or close == buy_price_stoploss or close < out_vwap)
+    strategy.close("Long")
+	buy_open := false
+
+// Sell
+if(out_vwap > close and out_8 < out_14 and (not sell_open))
+	sell_open := true
+    sell_price_stoploss := close + ((close * 25)/10000)
+    strategy.entry("Short",strategy.short)
+    
+// Close Sell trade
+if(ema_crossover_above_14 or close == sell_price_stoploss or close > out_vwap)
+    strategy.close("Short")
+	sell_open := false
